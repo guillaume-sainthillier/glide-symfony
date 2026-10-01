@@ -30,13 +30,12 @@ class MinimalSymfonyResponseFactory implements ResponseFactoryInterface
     /**
      * Bytes read up front to tell the image format; enough for every format Glide encodes.
      */
-    const SNIFF_LENGTH = 16;
+    private const SNIFF_LENGTH = 16;
 
     /**
      * Request object to check "is not modified".
-     * @var Request|null
      */
-    protected $request;
+    protected ?Request $request;
 
     /**
      * Create MinimalSymfonyResponseFactory instance.
@@ -49,11 +48,10 @@ class MinimalSymfonyResponseFactory implements ResponseFactoryInterface
 
     /**
      * Create the response.
-     * @param  FilesystemOperator $cache The cache file system.
-     * @param  string             $path  The cached file path.
-     * @return StreamedResponse   The response object.
+     * @param FilesystemOperator $cache The cache file system.
+     * @param string             $path  The cached file path (untyped: league/glide 2 declares it so).
      */
-    public function create(FilesystemOperator $cache, $path)
+    public function create(FilesystemOperator $cache, $path): StreamedResponse
     {
         $response = new StreamedResponse();
         $response->setPublic();
@@ -65,7 +63,7 @@ class MinimalSymfonyResponseFactory implements ResponseFactoryInterface
 
             if ($response->isNotModified($this->request)) {
                 // Symfony 5 refuses to send a StreamedResponse without callback
-                $response->setCallback(function () {
+                $response->setCallback(static function (): void {
                 });
 
                 return $response;
@@ -91,7 +89,7 @@ class MinimalSymfonyResponseFactory implements ResponseFactoryInterface
         $response->headers->set('Content-Type', self::sniffMimeType($head) ?? $this->storedMimeType($cache, $path));
         $response->headers->set('Content-Length', null !== $size ? $size : $cache->fileSize($path));
 
-        $response->setCallback(function () use ($stream, $head) {
+        $response->setCallback(static function () use ($stream, $head): void {
             echo $head;
             fpassthru($stream);
             fclose($stream);
@@ -103,11 +101,8 @@ class MinimalSymfonyResponseFactory implements ResponseFactoryInterface
     /**
      * The mime type the cache tells for a format Glide does not encode itself. A
      * cache unable to tell must not fail the request: the image is there.
-     * @param  FilesystemOperator $cache The cache file system.
-     * @param  string             $path  The cached file path.
-     * @return string             The mime type.
      */
-    protected function storedMimeType(FilesystemOperator $cache, $path)
+    protected function storedMimeType(FilesystemOperator $cache, string $path): string
     {
         try {
             return $cache->mimeType($path);
@@ -117,11 +112,10 @@ class MinimalSymfonyResponseFactory implements ResponseFactoryInterface
     }
 
     /**
-     * The mime type of the formats Glide encodes, from their magic bytes.
-     * @param  string      $head The first bytes of the image.
-     * @return string|null The mime type, or null for any other format.
+     * The mime type of the formats Glide encodes, from their magic bytes, or
+     * null for any other format.
      */
-    protected static function sniffMimeType($head)
+    protected static function sniffMimeType(string $head): ?string
     {
         if (str_starts_with($head, "\xFF\xD8\xFF")) {
             return 'image/jpeg';

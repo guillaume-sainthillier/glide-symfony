@@ -13,7 +13,7 @@ use Symfony\Component\HttpFoundation\Response;
 class MinimalSymfonyResponseFactoryTest extends TestCase
 {
     /** @var list<string> */
-    private $files = [];
+    private array $files = [];
 
     public function tearDown(): void
     {
